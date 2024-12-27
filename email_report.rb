@@ -96,6 +96,11 @@ end
 # Generate email body from Markdown
 def generate_report(directory, report_period = "Weekly")
   files = Dir.glob("#{directory}/*.{md,html}")
+  if files.empty?
+    log "⚠️ No content found in #{directory}, skipping report generation.", :warning
+    return nil
+  end
+
   content = files.map { |file| File.read(file) }.join("\n\n")
   renderer = ImagePathRenderer.new(directory)
   markdown = Redcarpet::Markdown.new(renderer, autolink: true, tables: true, fenced_code_blocks: true)
@@ -215,11 +220,22 @@ end
 if __FILE__ == $0
   begin
     log "🚀 Starting Email Report Generator", :info
-    report_directory = './reports'
     report_period = ENV.fetch('REPORT_PERIOD', "Weekly")
+    report_directory = "./reports/#{report_period.downcase}"
+
+    unless Dir.exist?(report_directory)
+      log "⚠️ Report directory #{report_directory} does not exist, skipping.", :warning
+      exit 0
+    end
+
     report_content = generate_report(report_directory, report_period)
-    email_subject = "Loftwah's #{report_period} Report"
-    send_email(email_subject, report_content)
+    if report_content
+      email_subject = "Loftwah's #{report_period} Report"
+      send_email(email_subject, report_content)
+    else
+      log "⚠️ No content generated for #{report_period} report.", :warning
+    end
+
     log "✨ Process completed!", :success
   rescue StandardError => e
     log "💥 Fatal error: #{e.message}", :error

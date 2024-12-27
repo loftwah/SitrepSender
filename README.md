@@ -7,8 +7,9 @@ Welcome to **Loftwah's SitrepSender**! This is your one-stop solution for genera
 ## Features
 
 - **Dynamic Personalisation**: Automatically creates reports with customised titles like _Loftwah's Weekly Sitrep_, _Loftwah's Fortnightly Update_, or _Loftwah's Monthly Sitrep_.
-- **Markdown to Magic**: Transforms Markdown into sleek HTML emails with inline styles.
-- **Image Attachments**: Handles local images by attaching them to emails and replacing inline images with descriptive notes.
+- **Markdown and HTML Handling**: Transforms Markdown and HTML content into sleek emails with inline styles.
+- **Image Attachments**: Handles local images by attaching them to emails and replacing inline references with descriptive notes.
+- **Directory Organisation**: Separate directories for daily, weekly, fortnightly, and monthly reports to avoid conflicts.
 - **Environment Configuration**: Seamlessly integrates with `.env` for secure handling of API keys and email credentials.
 - **Workflow Ready**: Perfectly tailored for **GitHub Actions**, automating your reporting process like a true pro.
 
@@ -53,15 +54,26 @@ REPORT_PERIOD=Weekly
 
 ## Usage
 
-### 1. Prepare Your Content
+### 1. Directory Structure
 
-- Place Markdown or HTML files in the `./reports` directory. These files should contain the specific information you want included in your report. For example:
-  - **Daily**: Key metrics, logs, or events from the last 24 hours.
-  - **Weekly**: Summaries, highlights, or performance trends for the week.
-  - **Fortnightly**: Mid-month updates or milestones.
-  - **Monthly**: Comprehensive overviews, project progress, or financial summaries.
+To avoid conflicts and organise content by report type, use the following directory structure:
 
-**Important**: The script doesn’t validate or modify the content; it simply generates and sends whatever is in the `reports/` directory. Ensure you’ve placed the correct files for the desired period.
+```plaintext
+reports/
+├── daily/
+├── weekly/
+├── fortnightly/
+└── monthly/
+```
+
+Each directory should contain the Markdown or HTML files for the respective report period. For example:
+
+- **Daily Reports**: Place daily logs, key metrics, or summaries in `reports/daily/`.
+- **Weekly Reports**: Add weekly summaries, highlights, or trends to `reports/weekly/`.
+- **Fortnightly Reports**: Include mid-month updates or milestones in `reports/fortnightly/`.
+- **Monthly Reports**: Add comprehensive overviews, project progress, or financial summaries to `reports/monthly/`.
+
+**Important**: If a directory is empty, the script will skip generating and sending a report for that period.
 
 ### 2. Run the Script
 
@@ -71,13 +83,14 @@ ruby email_report.rb
 
 ### 3. Dynamic Subject Line
 
-- The email subject dynamically changes based on the `REPORT_PERIOD`, for example:
-  ```
-  Loftwah's Daily Sitrep
-  Loftwah's Weekly Sitrep
-  Loftwah's Fortnightly Update
-  Loftwah's Monthly Sitrep
-  ```
+The email subject dynamically changes based on the `REPORT_PERIOD`, for example:
+
+```plaintext
+Loftwah's Daily Sitrep
+Loftwah's Weekly Sitrep
+Loftwah's Fortnightly Update
+Loftwah's Monthly Sitrep
+```
 
 ---
 
@@ -120,11 +133,12 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
         run: |
-          case $(date +"%d") in
-            01) REPORT_PERIOD=Monthly ruby email_report.rb ;;
-            15) REPORT_PERIOD=Fortnightly ruby email_report.rb ;;
-            *) REPORT_PERIOD=Daily ruby email_report.rb ;;
-          esac
+          REPORT_DIR="reports/${{ env.REPORT_PERIOD }}"
+          if [ -d "$REPORT_DIR" ] && [ "$(ls -A $REPORT_DIR)" ]; then
+            ruby email_report.rb
+          else
+            echo "No content found in $REPORT_DIR, skipping report."
+          fi
 ```
 
 ### Explanation
@@ -153,6 +167,10 @@ UTC (Coordinated Universal Time) is the global standard for timekeeping, unaffec
 .
 ├── email_report.rb        # The brains of the operation
 ├── reports/               # Markdown/HTML files for your content
+│   ├── daily/
+│   ├── weekly/
+│   ├── fortnightly/
+│   └── monthly/
 ├── Gemfile                # Gem dependencies
 ├── Gemfile.lock           # Locked gem versions
 ├── .env                   # Environment variables (ignored in Git)
@@ -189,7 +207,7 @@ The email design is controlled by inline CSS in the `generate_report` method. Up
 
 #### 3. **Missing Content**
 
-- Make sure you’ve added Markdown or HTML files to the `./reports` directory.
+- Make sure you’ve added Markdown or HTML files to the appropriate `reports/` subdirectory.
 
 ### Debugging
 
