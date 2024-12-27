@@ -69,10 +69,10 @@ class ImagePathRenderer < Redcarpet::Render::HTML
         begin
           mime_type = MIME::Types.type_for(image_path).first.to_s
           content_id = "#{File.basename(image_path)}@example.com"
-          
+
           # Add image as attachment
           ImagePathRenderer.image_attachments << { path: image_path, mime_type: mime_type, content_id: content_id }
-  
+
           # Replace inline image with a note
           log "📝 Replacing inline image with text note for #{File.basename(image_path)}", :info
           %(<p><em>[Image: #{alt_text} - see attached file: #{File.basename(image_path)}]</em></p>)
@@ -85,7 +85,7 @@ class ImagePathRenderer < Redcarpet::Render::HTML
         %(<p><em>[Image not found: #{alt_text}]</em></p>)
       end
     end
-  end  
+  end
 
   @image_attachments = []
   class << self
@@ -94,12 +94,91 @@ class ImagePathRenderer < Redcarpet::Render::HTML
 end
 
 # Generate email body from Markdown
-def generate_report(directory)
+def generate_report(directory, report_period = "Weekly")
   files = Dir.glob("#{directory}/*.{md,html}")
   content = files.map { |file| File.read(file) }.join("\n\n")
   renderer = ImagePathRenderer.new(directory)
   markdown = Redcarpet::Markdown.new(renderer, autolink: true, tables: true, fenced_code_blocks: true)
-  markdown.render(content)
+
+  html_content = markdown.render(content)
+
+  # Wrap the HTML content in a styled template
+  <<-HTML
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+          }
+          .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background: #4CAF50;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+          }
+          .content {
+            padding: 20px;
+          }
+          .content h1, .content h2, .content h3 {
+            color: #4CAF50;
+          }
+          .content p {
+            margin: 1em 0;
+          }
+          .content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+          }
+          .content table th, .content table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+          }
+          .content table th {
+            background: #f4f4f4;
+          }
+          .content img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+          }
+          .footer {
+            text-align: center;
+            padding: 10px;
+            background: #f4f4f4;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="wrapper">
+          <div class="header">
+            <h1>Loftwah's #{report_period} Report</h1>
+          </div>
+          <div class="content">
+            #{html_content}
+          </div>
+          <div class="footer">
+            <p>Generated on #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  HTML
 end
 
 # Prepare email payload
@@ -137,8 +216,9 @@ if __FILE__ == $0
   begin
     log "🚀 Starting Email Report Generator", :info
     report_directory = './reports'
-    report_content = generate_report(report_directory)
-    email_subject = "Your Report for #{Time.now.strftime('%Y-%m-%d')}"
+    report_period = ENV.fetch('REPORT_PERIOD', "Weekly")
+    report_content = generate_report(report_directory, report_period)
+    email_subject = "Loftwah's #{report_period} Report"
     send_email(email_subject, report_content)
     log "✨ Process completed!", :success
   rescue StandardError => e
