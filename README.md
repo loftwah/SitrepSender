@@ -46,9 +46,27 @@ Create a `.env` file in the root directory with the following:
 ```env
 RESEND_API_KEY=<your_resend_api_key>
 SENDER_EMAIL=<your_sender_email>
-RECIPIENT_EMAIL=<recipient_email>
+RECIPIENT_EMAIL=<recipient_email_or_array>
 REPORT_PERIOD=Weekly
 ```
+
+#### **RECIPIENT_EMAIL Format**
+
+- For a **single recipient**, use a plain string:
+  ```env
+  RECIPIENT_EMAIL=dean@deanlofts.xyz
+  ```
+- For **multiple recipients**, use a JSON array:
+  ```env
+  RECIPIENT_EMAIL=["dean@deanlofts.xyz", "other@domain.com"]
+  ```
+
+The script will handle both formats seamlessly.
+
+#### **REPORT_PERIOD Default**
+
+- Defaults to `Weekly` if not specified.
+- Options: `Daily`, `Weekly`, `Fortnightly`, `Monthly`, or custom values. This also determines the corresponding directory (`reports/<period>/`).
 
 ---
 
